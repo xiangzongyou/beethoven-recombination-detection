@@ -1,0 +1,15 @@
+Single-feature differences, Beethoven vs. other composers (non-silent bars).
+The 10 largest |d| of the 27 features are shown.
+d = (mean_Beethoven - mean_other) / overall std
+
+feature                       d  Beethoven    other
+pitch_variety             -0.18      10.64    11.70
+std_velocity              -0.17      10.56    11.30
+bass_register             +0.16       0.29     0.25
+pitch_class_variety       -0.16       5.84     6.20
+pc_entropy                -0.13       2.22     2.30
+pulse_strength            +0.12       0.30     0.29
+large_leaps               -0.11       0.47     0.50
+mean_pitch                -0.11      62.30    63.24
+stepwise_motion           +0.09       0.18     0.16
+melodic_thirds            +0.08       0.17     0.15

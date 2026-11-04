@@ -1,0 +1,15 @@
+,real,random_splice,selected_splice
+key_sim,0.681,0.372,0.675
+key_sim_ctx,0.709,0.44,0.652
+mel_jump,9.073,15.063,1.575
+bass_jump,10.335,16.597,11.522
+register_jump,4.971,9.666,7.512
+density_jump,1.96,3.718,3.576
+rhythm_change,0.397,0.672,0.635
+held_over,1.51,1.51,1.51
+first_onset,0.195,0.199,0.178
+held_x_onset,0.456,0.299,0.266
+vel_edge_jump,7.797,18.844,17.758
+vel_mean_jump,8.081,17.513,16.46
+pulse_change,0.521,0.623,0.614
+poly_change,0.585,0.871,0.85
