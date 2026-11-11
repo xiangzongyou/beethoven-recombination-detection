@@ -7,7 +7,7 @@ This project reproduces the segment-level Beethoven classifier from Galajda and 
 1. The reproduction works. A two-layer GRU on 27 features per bar reaches an AUC of about 0.96 for "Beethoven or not", and the result stays the same when I split the data by piece, by recording year, or remove the dynamics and duration features.
 2. Recombination fools the classifier. When I spliced together bars from different Beethoven works, 83 to 92 percent of the segments were classified as Beethoven, which is as often as or more often than real Beethoven (83 percent). On MAESTRO, splicing also raised the Beethoven rate of non-Beethoven music from 8 to 25 percent, but this did not hold when I repeated the test on scores.
 3. Transitions reveal recombination. A detector that only sees features of the transitions between bars separates spliced 32-bar segments from real ones with an AUC of 0.94 to 0.96, or 0.82 to 0.88 with pitch features only.
-4. Selected splicing leaves its own fingerprint. When each splice is chosen to keep the key close and the melodic leap small, the transitions become smoother than real Beethoven (a mean melodic leap of 1.6 semitones against 9.1). A detector trained on only one way of splicing does not work on the other.
+4. Selected splicing leaves its own fingerprint. When each splice is chosen to keep the key close and the melodic leap small, the transitions become smoother than real Beethoven (a mean melodic leap of 1.6 semitones against 9.1). A detector trained on only one way of splicing does not work on the other. On scores with real barlines this fingerprint is weaker (6.0 against 8.7 semitones), but it goes in the same direction.
 5. The results hold with real barlines. When I repeated both experiments on ASAP scores, the transition detector worked as well as with 2-second windows, and the classifier still accepted spliced imitations.
 
 ## Background
@@ -18,7 +18,7 @@ Galajda and Hua (2024) classify composer style segment by segment instead of pie
 
 The main experiments use [MAESTRO v3.0.0](https://magenta.tensorflow.org/datasets/maestro), MIDI only (about 58 MB), which contains 1,276 performances by 60 composers. Following the original paper, I removed composers with only one work, which leaves 35 composers. MAESTRO is licensed under CC BY-NC-SA 4.0, so it is not included in this repository. To run the scripts, download `maestro-v3.0.0-midi.zip` and unzip it first.
 
-The score-based replication uses ASAP (Foscarin et al., 2020), which I downloaded file by file from its GitHub repository. It is not included here either, and its terms are given in that repository.
+The score-based replication uses ASAP (Foscarin et al., 2020), which I downloaded file by file from its GitHub repository. ASAP is licensed under CC BY-NC-SA 4.0, so it is not included here either.
 
 ## Method
 
@@ -40,7 +40,7 @@ Since initial tempo and time signature are the same for every MAESTRO file, I re
 
 ### Segments and model (`train_gru.py`)
 
-Each segment is 32 consecutive bars, with no overlap, which gives 10,470 segments, 13.8 percent of them by Beethoven. The model has two GRU layers with 512 units each, followed by batch normalisation, fully connected layers (128, 32 and 1 units) and a dropout of 0.4. I trained it for 12 epochs with Adam at a learning rate of 1e-3, using binary cross-entropy weighted for the class imbalance. As a baseline, I also trained a logistic regression on the mean feature vector of each segment, which ignores the order of the bars.
+Each segment is 32 consecutive bars, with no overlap, which gives 10,470 segments, 13.8 percent of them by Beethoven. The model has two GRU layers with 512 units each, followed by batch normalization, fully connected layers (128, 32 and 1 units) and a dropout of 0.4. I trained it for 12 epochs with Adam at a learning rate of 1e-3, using binary cross-entropy weighted for the class imbalance. As a baseline, I also trained a logistic regression on the mean feature vector of each segment, which ignores the order of the bars.
 
 ### Data splits
 
@@ -66,7 +66,7 @@ The table shows the GRU results as the mean and standard deviation over runs.
 | year | 3 | 0.78 ± 0.07 | 0.80 ± 0.13 | 0.78 | 0.96 | 0.80 |
 | grouped, no performance features | 3 | 0.60 ± 0.14 | 0.90 ± 0.03 | 0.71 | 0.96 | 0.75 |
 
-The original paper reports a precision of 85 to 87 percent and a recall of 100 percent, so my precision is lower and my recall does not reach 100 percent. However, the AUC does not change under the stricter splits, which shows that overlap of works between training and test sets does not explain the result. The GRU also does much better than the baseline that ignores bar order. On the other hand, no single feature separates Beethoven from the other composers by much (every |Cohen's d| is below 0.2, see `feature_effects.txt`). This gap disappears on scores, see the score-based replication below.
+The original paper reports a precision of 85 to 87 percent and a recall of 100 percent, so my precision is lower and my recall does not reach 100 percent. However, the AUC does not change under the stricter splits, which shows that overlap of works between training and test sets does not explain the result. The GRU also does much better than the baseline that ignores bar order, although this gap disappears on scores (see the score-based replication below). On the other hand, no single feature separates Beethoven from the other composers by much (every |Cohen's d| is below 0.2, see `feature_effects.txt`).
 
 ### Experiment A: Recombination test (`recombination_test.py`)
 
@@ -89,7 +89,7 @@ In this experiment, I trained the GRU on the grouped split 3 times, and built im
 | Real segments by other composers | 8% ± 1 |
 | Random splice across other composers' works, 4-bar chunks | 25% ± 2 |
 
-The results show that the classifier does not penalise recombination, since splices of real Beethoven bars score as high as real segments or even higher. This means it mainly judges whether each bar sounds like Beethoven, rather than whether the bars belong together. Splicing also pushed non-Beethoven music toward "Beethoven" (8 to 25 percent). One possible explanation is that the model learned sudden contrast between passages as a Beethoven trait, but this did not hold on scores. One question is still open. Shuffling bars within a segment lowers the score (83 to 61 percent), but splicing across works does not.
+The results show that the classifier does not penalize recombination, since splices of real Beethoven bars score as high as real segments or even higher. This means it mainly judges whether each bar sounds like Beethoven, rather than whether the bars belong together. Splicing also pushed non-Beethoven music toward "Beethoven" (8 to 25 percent). One possible explanation is that the model learned sudden contrast between passages as a Beethoven trait. However, this effect did not appear on scores (see below). One question is still open. Shuffling bars within a segment lowers the score (83 to 61 percent), but splicing across works does not.
 
 ### Experiment B: Transition detector (`extract_edges.py`, `splice_detector.py`)
 
@@ -130,7 +130,7 @@ To understand why, I compared the mean transition features of real and spliced p
 | Register change (semitones) | 5.0 | 9.7 | 7.5 |
 | Onset-density change | 2.0 | 3.7 | 3.6 |
 
-The table shows that the selection rule goes too far. Selected splices match real transitions in key similarity between two bars, but their melodic leaps are much smaller than in real music. This is why a detector trained on random splices underestimates them, and why a detector trained on selected splices treats large leaps as a sign of a real transition. In the logistic regression trained on both kinds of splices, the most useful cues are the key similarity with context (standardised coefficient −0.64), the jump in onset density (+0.76), the jump in register (+0.63), and the interaction between held notes and the delay of the first onset (−0.55), see `logreg_coefficients.csv`.
+The table shows that the selection rule goes too far. Selected splices match real transitions in key similarity between two bars, but their melodic leaps are much smaller than in real music. This is why a detector trained on random splices underestimates them, and why a detector trained on selected splices treats large leaps as a sign of a real transition. In the logistic regression trained on both kinds of splices, the most useful cues are the key similarity with context (standardized coefficient −0.64), the jump in onset density (+0.76), the jump in register (+0.63), and the interaction between held notes and the delay of the first onset (−0.55), see `logreg_coefficients.csv`.
 
 ## Score-based replication (real barlines)
 
@@ -171,7 +171,7 @@ I also retrained the GRU classifier on the scores, holding out whole sonatas. It
 | Random splice across other composers' works | 11% ± 7 |
 | Haydn and Mozart segments | 15% ± 20 (3–29 test segments per run) |
 
-Overall, the classifier still does not penalise recombination. Random splices of Beethoven bars were labeled Beethoven more often than real Beethoven segments in all 10 runs, by 14 points on average, and selected splices were labeled Beethoven about as often as real ones.
+Overall, the classifier still does not penalize recombination. Random splices of Beethoven bars were labeled Beethoven more often than real Beethoven segments in all 10 runs, by 14 points on average, and selected splices were labeled Beethoven about as often as real ones.
 
 However, two results from MAESTRO did not hold on scores. Firstly, on MAESTRO, splicing raised the Beethoven rate of non-Beethoven music from 8 to 25 percent, but on scores it went down from 16 to 11 percent. I therefore treat this effect as specific to performance MIDI cut into 2-second windows. Secondly, on MAESTRO the GRU was much better than the order-blind baseline (0.96 against 0.79), while on scores the two are almost the same (0.87 against 0.86). This suggests that part of the GRU's advantage on MAESTRO came from performance timing rather than from the composition, although the two datasets are different, so I cannot say this for sure.
 
